@@ -1,0 +1,140 @@
+syntax = "proto3";
+package pbft;
+option go_package = "/";
+
+
+
+message Request {
+    string operation = 1;      
+    string account_from = 2;   
+    string shard_from = 3;     
+    string account_to = 4;      
+    string shard_to = 5;       
+    int64 amount = 6;         
+    string client_id = 7;       
+    int64 timestamp = 8;     
+}
+
+
+message Response {
+    string client_id = 1;
+    int64 timestamp = 2;
+    string result = 3;
+}
+
+message PrePrepare {
+    string view = 1;
+    int64 sequence_number = 2;
+    string digest = 3;
+    Request request = 4;
+    string replica_id = 5; 
+    bytes signature = 6;  
+}
+
+message Prepare {
+    string view = 1;
+    int64 sequence_number = 2;
+    string replica_id = 3;
+    string digest = 4;
+    bytes signature = 5;
+}
+
+message Commit {
+    string view = 1;
+    int64 sequence_number = 2;
+    string replica_id = 3;
+    string digest = 4;
+    bytes signature = 5;
+}
+
+message ViewChange {
+    string new_view = 1;
+    int64 last_sequence_number = 2;
+    repeated Prepare prepared_messages = 3;
+    string replica_id = 4;
+    bytes signature = 5;
+}
+
+message NewView {
+    string new_view = 1;
+    repeated ViewChange view_changes = 2;
+    repeated PrePrepare pre_prepares = 3;
+    string replica_id = 4;
+    bytes signature = 5;
+}
+
+message Checkpoint {
+    int64 sequence_number = 1;
+    string replica_id = 2;
+    bytes state_digest = 3; 
+    bytes signature = 4;
+}
+
+message StateTransferRequest {
+    string replica_id = 1;
+    int64 sequence_number = 2;
+}
+
+message StateTransferResponse {
+    string replica_id = 1;
+    int64 sequence_number = 2;
+    bytes state = 3; 
+    bytes signature = 4;
+}
+
+message CrossShardRequest {
+    string transaction_id = 1;
+    Request request = 2;
+    repeated string involved_shards = 3; 
+    string initiating_shard = 4;
+    bytes signature = 5;
+}
+
+message CrossShardResponse {
+    string transaction_id = 1;
+    string result = 2;
+    bytes signature = 3;
+}
+
+message ShardPrepare {
+    string transaction_id = 1;
+    string shard_id = 2;
+    string digest = 3;
+    bytes signature = 4;
+}
+
+message ShardCommit {
+    string transaction_id = 1;
+    string shard_id = 2;
+    string digest = 3;
+    bytes signature = 4;
+}
+
+message Ack {
+    bool success = 1;
+}
+
+service PBFTService {
+    // Client interactions
+    rpc ClientRequest(Request) returns (Response);
+
+    // PBFT Phases
+    rpc PrePrepareBroadcast(PrePrepare) returns (Ack);
+    rpc PrepareBroadcast(Prepare) returns (Ack);
+    rpc CommitBroadcast(Commit) returns (Ack);
+
+    // View change protocol
+    rpc ViewChangeBroadcast(ViewChange) returns (Ack);
+    rpc NewViewBroadcast(NewView) returns (Ack);
+
+    // Checkpointing and state transfer
+    rpc CheckpointBroadcast(Checkpoint) returns (Ack);
+    rpc StateTransfer(StateTransferRequest) returns (StateTransferResponse);
+
+    // Cross-shard transaction handling
+    rpc CrossShardRequestInitiate(CrossShardRequest) returns (Ack);
+    rpc ShardPrepareBroadcast(ShardPrepare) returns (Ack);
+    rpc ShardCommitBroadcast(ShardCommit) returns (Ack);
+    rpc CrossShardResponseFinalize(CrossShardResponse) returns (Ack);
+}
+
