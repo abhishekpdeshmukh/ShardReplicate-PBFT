@@ -1,0 +1,4 @@
+transfer,AccountA,shard1,AccountB,shard1,50
+transfer,AccountB,shard1,AccountC,shard1,30
+transfer,AccountA,shard1,AccountC,shard1,20
+transfer,AccountC,shard1,AccountA,shard1,40
